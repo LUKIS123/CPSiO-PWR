@@ -16,6 +16,7 @@ ekg_noise_time = None
 
 sampling_frequency_ekg1 = 1000
 sampling_frequency_ekg_100 = 360
+sampling_frequency_ekg_noise = 360
 
 
 def main():
@@ -23,8 +24,23 @@ def main():
         print("Usage: python main.py <exercise_number>")
         return
     if (sys.argv[1] == "1"):
-        exercise_1_1()
-        exercise_1_2()
+        files_to_choose = utils.list_files_in_directory("./resources")
+        print("Zadanie 1:")
+        print(*files_to_choose, sep=", ")
+        print("Wybierz plik wpisując liczbę (1, 2 lub 3):")
+
+        try:
+            chosen_file = int(input())
+            match chosen_file:
+                case 1:
+                    exercise_1_1()
+                case 2:
+                    exercise_1_2()
+                case 3:
+                    exercise_1_3()
+        except Exception:
+            print("Niepoprawny wybór")
+            return
 
 
 def exercise_1_1():
@@ -65,9 +81,9 @@ def exercise_1_2():
     global ekg_100_time
     global sampling_frequency_ekg_100
 
-    with open("./resources/ekg_100.txt", "r+") as file_ekg_ex100:
+    with open("./resources/ekg_100.txt", "r+") as file_ekg_100:
         while True:
-            line = file_ekg_ex100.readline()
+            line = file_ekg_100.readline()
             if not line:
                 break
             values_row = line.lstrip().split()
@@ -89,6 +105,40 @@ def exercise_1_2():
     plt.xlabel('Czas[s]')
     plt.ylabel('Wartość')
     plt.xlim(ekg_100_time[0], ekg_100_time[len(ekg_100_time) - 1])
+
+    plt.show()
+
+
+def exercise_1_3():
+    global data_ekg_noise
+    global ekg_noise_time
+    global sampling_frequency_ekg_noise
+
+    with open("./resources/ekg_noise.txt", "r+") as file_ekg_noise:
+        while True:
+            line = file_ekg_noise.readline()
+            if not line:
+                break
+            values_row = line.lstrip().split()
+            values_row = np.array(list(map(float, values_row)))
+
+            data_ekg_noise.append(values_row)
+
+    data_ekg_noise = np.array(data_ekg_noise)
+    ekg_noise_time = np.arange(len(data_ekg_noise)) / \
+        sampling_frequency_ekg_noise
+
+    plt.figure(figsize=(20, 10))
+    plt.legend(loc="upper left")
+
+    for i in range(len(data_ekg_noise[0])):
+        plt.plot(ekg_noise_time, data_ekg_noise[:, i])
+
+    plt.legend(["Column " + str(i + 1) for i in range(len(data_ekg_noise[0]))])
+    plt.title('ekg_noise.txt')
+    plt.xlabel('Czas[s]')
+    plt.ylabel('Wartość')
+    plt.xlim(ekg_noise_time[0], ekg_noise_time[len(ekg_noise_time) - 1])
 
     plt.show()
 
