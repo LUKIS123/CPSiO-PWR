@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import math
+import scipy.signal as sig
 
 import utils
 
@@ -21,7 +22,10 @@ sampling_frequency_ekg_noise = 360
 
 
 def main():
-    exercise_2_5()
+    #exercise_3_1()
+    #exercise_3_2()
+    exercise_4_1()
+    exercise_4_2_3()
     return
 
     if len(sys.argv) < 2:
@@ -115,7 +119,6 @@ def exercise_1_2():
 
 def exercise_1_3():
     global data_ekg_noise
-    global ekg_noise_time
     global sampling_frequency_ekg_noise
 
     with open("./resources/ekg_noise.txt", "r+") as file_ekg_noise:
@@ -129,20 +132,18 @@ def exercise_1_3():
             data_ekg_noise.append(values_row)
 
     data_ekg_noise = np.array(data_ekg_noise)
-    ekg_noise_time = np.arange(len(data_ekg_noise)) / \
-        sampling_frequency_ekg_noise
 
     plt.figure(figsize=(20, 10))
     plt.legend(loc="upper left")
 
-    for i in range(len(data_ekg_noise[0])):
-        plt.plot(ekg_noise_time, data_ekg_noise[:, i])
+    plt.plot(data_ekg_noise[:, 0], data_ekg_noise[:, 1])
 
     plt.legend(["Column " + str(i + 1) for i in range(len(data_ekg_noise[0]))])
     plt.title('ekg_noise.txt')
     plt.xlabel('Czas[s]')
     plt.ylabel('Wartość')
-    plt.xlim(ekg_noise_time[0], ekg_noise_time[len(ekg_noise_time) - 1])
+    plt.xlim(data_ekg_noise[:, 0][0],
+             data_ekg_noise[:, 0][data_ekg_noise[:, 0].size - 1])
 
     plt.show()
 
@@ -327,6 +328,224 @@ def exercise_2_5():
     plt.grid(True)
     plt.show()
 
+def exercise_3_1():
+    exercise_1_2()
+    
+def exercise_3_2():
+    global data_ekg_100
+    global ekg_100_time
+    
+    length = len(data_ekg_100)
+    sampling_rate = 360      # fs = 2 kHz
+    
+    # Wyznacz dyskretną transformatę Fouriera tego sygnału i przedstaw jego widmo
+    # amplitudowe na wykresie w zakresie częstotliwości [0, fs/2], gdzie fs oznacza
+    # częstotliwość próbkowania.
 
+    # Dyskretna Transformata Fouriera (DFT)
+    dft_result = np.fft.fft(data_ekg_100)
+    # Obliczenie częstotliwości
+    freq = np.fft.fftfreq(length, 1/sampling_rate)
+    # Indeksy częstotliwości do narysowania (0 do fs/2)
+    positive_freq_indices = np.where(freq >= 0)
+    # Widmo amplitudowe
+    # Normalizacja przez długość sygnału
+    amplitudes = np.abs(dft_result) / length
+    # Podwojenie amplitud (z uwzględnieniem symetrii)
+    amplitudes *= 2
+
+    # Narysowanie widma amplitudowego
+    plt.figure(figsize=(20, 10))
+    plt.plot(freq, amplitudes)
+    plt.title('Widmo Amplitudowe')
+    plt.xlabel('Częstotliwość [Hz]')
+    plt.ylabel('Amplituda')
+    plt.xlim(0, sampling_rate / 2)  # Zakres częstotliwości [0, fs/2]
+    plt.grid(True)
+    plt.show()
+    
+    # -----------------------------------------------------------------------------
+    
+    length = len(dft_result)
+    
+    invdft_result = np.fft.ifft(dft_result)
+    
+    plt.figure(figsize=(20, 10))
+    for i in range(len(invdft_result[0])):
+        plt.plot(ekg_100_time, invdft_result[:, i])
+
+    plt.legend(["Column " + str(i + 1) for i in range(len(data_ekg_100[0]))])
+    plt.title('ekg_100.txt Inverse Fourier')
+    plt.xlabel('Czas[s]')
+    plt.ylabel('Wartość')
+    plt.xlim(ekg_100_time[0], ekg_100_time[len(ekg_100_time) - 1])
+
+    plt.show()
+    
+# ---------------------------------------------------------------------------------    
+# Celem ćwiczenia jest praktyczne wypróbowanie działania filtrów 
+# w celu wyeliminowania niepożądanych zakłóceń z sygnału EKG. Proszę wybrać
+# rodzaj filtra do eksperymentowania, np. Butterwortha lub Czebyszewa. Do filtracji
+# wykorzystać gotowe funkcje z biblioteki scipy.signal [7]. Biblioteka posiada również
+# funkcje wspomagające projektowanie filtrów, które można zastosować.
+    
+def exercise_4_1():
+    global data_ekg_noise
+    # Wczytaj sygnał ekg noise.txt i zauważ zakłócenia nałożone na sygnał. Wykreślić częstotliwościową charakterystykę amplitudową sygnału
+    exercise_1_3()
+    
+    length = len(data_ekg_noise)
+    sampling_rate = 360      # fs = 2 kHz
+
+    dft_result = np.abs(np.fft.fft(data_ekg_noise[:,1])) / length
+    freq = np.fft.fftfreq(length, 1/sampling_rate)
+    #positive_freq_indices = np.where(freq >= 0)
+    #amplitudes = np.abs(dft_result) / length
+
+    # Narysowanie charakterystyki
+    plt.figure(figsize=(10, 5))
+    plt.plot(freq, dft_result)
+    plt.title('częstotliwościowa charakterystyka amplitudowa')
+    plt.xlabel('Częstotliwość [Hz]')
+    plt.ylabel('Amplituda')
+    plt.grid(True)
+    plt.axvline(60, color='red')
+    plt.show()
+    
+def exercise_4_2_3():
+    
+    global data_ekg_noise
+    sampling_rate = 360
+    
+    # dolnoprzepustowy - parametry i sygnał po filtracji
+    sos = sig.butter(4, 60, 'lowpass', output='sos', fs = 360)
+    filtered_data = sig.sosfilt(sos, data_ekg_noise[:,1])
+    
+    length = len(filtered_data)
+    
+    plt.figure(figsize=(10, 5)) 
+    plt.plot(data_ekg_noise[:,0], filtered_data)
+    plt.title('filtered dolnoprzepustowy Butterwortha')
+    plt.xlabel('Czas[s]')
+    plt.ylabel('Wartość')
+    plt.grid(True)
+    plt.show()
+    
+    # wykreslenie charakterystyki filtra
+    b, a = sig.butter(4, 60, 'low', fs=360)
+    w, h = sig.freqz(b, a)
+    #plt.semilogx(w*360/(2*np.pi), 20 * np.log10(abs(h)))
+    
+    plt.figure(figsize=(10, 5))
+    plt.plot(w*360/(2*np.pi), 20 * np.log10(abs(h)))
+    plt.title('Butterworth filter frequency response')
+    plt.xlabel('Frequency [Hz]')
+    plt.ylabel('Amplitude')
+    plt.grid(which='both', axis='both')
+    plt.axvline(60, color='green') # cutoff frequency
+    plt.show()
+    
+    # widmo sygnału po filtracji
+    dft_result = np.abs(np.fft.fft(filtered_data)) / length
+    freq = np.fft.fftfreq(length, 1/sampling_rate)
+    
+    plt.figure(figsize=(10, 5))
+    plt.plot(freq, dft_result)
+    plt.title('widmo sygnału po filtracji')
+    plt.xlabel('Częstotliwość [Hz]')
+    plt.ylabel('Amplituda')
+    plt.grid(True)
+    plt.axvline(60, color='red')
+    plt.show()
+    
+    # roznica przed i po filtracji
+    roznica =  data_ekg_noise[:,1] - filtered_data
+    plt.figure(figsize=(10, 5)) 
+    plt.plot(data_ekg_noise[:,0], roznica)
+    plt.title('roznica przed i po filtracji')
+    plt.xlabel('Czas[s]')
+    plt.ylabel('Wartość')
+    plt.grid(True)
+    plt.show()
+    
+    # widmo roznicy przed i po filtracji
+    dft_roznica = np.abs(np.fft.fft(roznica)) / length
+    freq = np.fft.fftfreq(length, 1/sampling_rate)
+    
+    plt.figure(figsize=(10, 5))
+    plt.plot(freq, dft_roznica)
+    plt.title('widmo roznicy')
+    plt.xlabel('Częstotliwość [Hz]')
+    plt.ylabel('Amplituda')
+    plt.grid(True)
+    plt.axvline(60, color='red')
+    plt.show()
+    
+    #EXERCISE 4_3
+    
+    # filtr górnoprzepustowy - 5Hz i sygnał po filtracji
+    sos = sig.butter(4, 5, 'highpass', output='sos', fs = 360)
+    filtered_data_2 = sig.sosfilt(sos, filtered_data)
+    length_2 = len(filtered_data_2)
+    
+    plt.figure(figsize=(10, 5)) 
+    plt.plot(data_ekg_noise[:,0], filtered_data_2)
+    plt.title('filtered gornoprzepustowy Butterwortha')
+    plt.xlabel('Czas[s]')
+    plt.ylabel('Wartość')
+    plt.grid(True)
+    plt.show()
+    
+    # charakterystyka
+    b, a = sig.butter(4, 5, 'highpass', fs=360)
+    w, h = sig.freqz(b, a)
+    
+    plt.figure(figsize=(10, 5))
+    plt.plot(w*360/(2*np.pi), 20 * np.log10(abs(h)))
+    plt.title('Butterworth filter frequency response')
+    plt.xlabel('Frequency [Hz]')
+    plt.ylabel('Amplitude')
+    plt.grid(which='both', axis='both')
+    plt.axvline(5, color='green') # cutoff frequency
+    plt.show()
+    
+    # widmo po filtracji
+    dft_result = np.abs(np.fft.fft(filtered_data_2)) / length_2
+    freq = np.fft.fftfreq(length_2, 1/sampling_rate)
+    
+    plt.figure(figsize=(10, 5))
+    plt.plot(freq, dft_result)
+    plt.title('widmo sygnału po filtracji')
+    plt.xlabel('Częstotliwość [Hz]')
+    plt.ylabel('Amplituda')
+    plt.grid(True)
+    plt.axvline(5, color='red')
+    plt.axvline(60, color='red')
+    plt.show()
+    
+    # roznica przed i po filtracji
+    roznica_2 =  filtered_data - filtered_data_2
+    plt.figure(figsize=(10, 5)) 
+    plt.plot(data_ekg_noise[:,0], roznica_2)
+    plt.title('roznica przed i po filtracji')
+    plt.xlabel('Czas[s]')
+    plt.ylabel('Wartość')
+    plt.grid(True)
+    plt.show()
+    
+    # widmo roznicy przed i po filtracji
+    dft_roznica_2 = np.abs(np.fft.fft(roznica_2)) / length_2
+    freq = np.fft.fftfreq(length_2, 1/sampling_rate)
+    
+    plt.figure(figsize=(10, 5))
+    plt.plot(freq, dft_roznica_2)
+    plt.title('widmo roznicy')
+    plt.xlabel('Częstotliwość [Hz]')
+    plt.ylabel('Amplituda')
+    plt.grid(True)
+    plt.axvline(5, color='red')
+    plt.axvline(60, color='red')
+    plt.show()
+    
 if __name__ == '__main__':
     main()
