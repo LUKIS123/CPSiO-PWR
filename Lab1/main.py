@@ -9,6 +9,11 @@ import utils
 
 # c:\Users\lukas\AppData\Local\Programs\Python\Python312\python.exe -m pip install pandas
 
+
+# print(sys.executable)
+# print(sys.version)
+# c:\Users\lukas\AppData\Local\Programs\Python\Python312\python.exe -m pip install pandas
+
 data_ekg1 = []
 data_ekg_100 = []
 data_ekg_noise = []
@@ -25,8 +30,8 @@ sampling_frequency_ekg_noise = 360
 def main():
     # exercise_3_1()
     # exercise_3_2()
-    exercise_4_1()
-    exercise_4_2_3()
+    # exercise_4_1()
+    # exercise_4_2_3()
     return
 
     if len(sys.argv) < 2:
